@@ -67,6 +67,11 @@ app.get("/scrape", function(req, res) {
       var result = {};
       // Add the text and href of every link, and save them as properties of the result object
       result.title = $(element).children("h2").text();
+      var auth = $(element).children(".launch-author").text();
+      auth = auth.replace("\nby","");
+      auth = auth.replace("\n", "");
+      auth = auth.replace("\n","");
+      result.author = auth;
       result.link = $("h2.launch-title").children("a").attr("href");
       result.desc = $(element).children("p").text();
      
@@ -102,16 +107,13 @@ db.Article.find({}).then(function(dbArticle)
 
 // Route for grabbing a specific Article by id, populate it with it's note
 app.get("/articles/:id", function(req, res) {
-  // TODO
-  // ====
-  // Finish the route so it finds one article using the req.params.id,
-  // and run the populate method with "note",
-  // then responds with the article with the note included
+
   db.Article.findOne({_id:req.params.id})
   .populate("note")
   .then(function(dbArticle)
   {
-    res.json(dbArticle);
+    res.render("comment", dbArticle);
+    // res.json(dbArticle);
   }).catch(function(err)
   {
     res.json(err);
@@ -120,14 +122,9 @@ app.get("/articles/:id", function(req, res) {
 
 // Route for saving/updating an Article's associated Note
 app.post("/articles/:id", function(req, res) {
-  // TODO
-  // ====
-  // save the new note that gets posted to the Notes collection
-  // then find an article from the req.params.id
-  // and update it's "note" property with the _id of the new note
  db.Note.create(req.body).then(function(dbNote){
  return db.Article.findOneAndUpdate(
-   {_id:mongojs.ObjectId(req.params.id)},{$push:{note:dbNote}}
+   {_id:req.params.id},{$push:{note:dbNote}}
 ).then(function(dbArticle)
 {
   res.json(dbArticle);
